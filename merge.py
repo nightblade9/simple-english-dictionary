@@ -1,8 +1,8 @@
 #!/bin/python3
 # Reads all the files in /data and merges them into "processed/merged.json"
-import glob, json
+import glob, json, os
 
-read_files = glob.glob("data/*.json")
+read_files = glob.glob(os.path.join("data", "*.json"))
 output_list = []
 
 for f in read_files:
@@ -25,5 +25,5 @@ for key in combined_json:
     meanings_list = list(meanings.values())
     element["MEANINGS"] = meanings_list
     
-output_file = open('merged.json', 'w')
-output_file.write(str(combined_json))
+output_file = open(os.path.join("processed", "merged.json"), "w")
+output_file.write(json.dumps(combined_json))
