@@ -32,9 +32,9 @@ for key in combined_json:
     element["MEANINGS"] = meanings_list
 
 # Create i18n-compatible JSON
-i18n_json = {}
+i18n_json = {"en": {}}
 for key, value in combined_json.items():
-    i18n_json[key] = value["MEANINGS"][0] if value["MEANINGS"] else ""
+    i18n_json["en"][key] = value["MEANINGS"][0] if value["MEANINGS"] else ""
 
 # Write outputs
 os.makedirs("processed", exist_ok=True)
@@ -47,7 +47,7 @@ with open(os.path.join("processed", "i18n.json"), "w") as i18n_file:
 
 # Create TMX file
 tmx = tmxfile()
-for key, value in i18n_json.items():
+for key, value in i18n_json["en"].items():
     tmx.addtranslation(value, "en", origintuple=(key,))
 
 with open(os.path.join("processed", "export.tmx"), "wb") as tmx_file:
@@ -55,17 +55,17 @@ with open(os.path.join("processed", "export.tmx"), "wb") as tmx_file:
 
 # Create JSON l10n file
 jsonl10n = JsonFile()
-for key, value in i18n_json.items():
-    jsonl10n.addunit(jsonl10n.UnitClass(source=value, context=key))
+for key, value in i18n_json["en"].items():
+    jsonl10n.addunit(jsonl10n.UnitClass(source=key, target=value))
 
 with open(os.path.join("processed", "l10n.json"), "wb") as l10n_file:
     jsonl10n.serialize(l10n_file)
 
 # Create PO file
 po = pofile()
-for key, value in i18n_json.items():
-    unit = po.UnitClass(source=value)
-    unit.context = key
+po.settargetlanguage('en')
+for key, value in i18n_json["en"].items():
+    unit = po.UnitClass(source=key, target=value)
     po.addunit(unit)
 
 with open(os.path.join("processed", "messages.po"), "wb") as po_file:
