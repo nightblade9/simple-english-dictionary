@@ -9,6 +9,14 @@ from translate.storage.tmx import tmxfile
 from translate.storage.jsonl10n import JsonFile
 from translate.storage.po import pofile
 
+def flatten_meaning(meaning):
+    if isinstance(meaning, str):
+        return meaning
+    elif isinstance(meaning, list):
+        return ' '.join(flatten_meaning(item) for item in meaning)
+    else:
+        return str(meaning)
+
 # Reads all the files in /data and merges them into "processed/merged.json"
 read_files = glob.glob(os.path.join("data", "*.json"))
 output_list = []
@@ -31,10 +39,22 @@ for key in combined_json:
     meanings_list = list(meanings.values())
     element["MEANINGS"] = meanings_list
 
-# Create i18n-compatible JSON
+# Create i18n-compatible JSON and TMX file
 i18n_json = {"en": {}}
+tmx = tmxfile()
+
 for key, value in combined_json.items():
-    i18n_json["en"][key] = value["MEANINGS"][0] if value["MEANINGS"] else ""
+    # Get the first meaning or an empty string if no meanings
+    first_meaning = value["MEANINGS"][0] if value["MEANINGS"] else ""
+    
+    # Flatten the meaning
+    flattened_meaning = flatten_meaning(first_meaning)
+    
+    # Add to i18n_json
+    i18n_json["en"][key] = flattened_meaning
+    
+    # Add to TMX
+    tmx.addtranslation(key, "en", flattened_meaning, "en")
 
 # Write outputs
 os.makedirs("processed", exist_ok=True)
@@ -45,16 +65,13 @@ with open(os.path.join("processed", "merged.json"), "w") as output_file:
 with open(os.path.join("processed", "i18n.json"), "w") as i18n_file:
     json.dump(i18n_json, i18n_file, indent=2)
 
-# Create TMX file
-tmx = tmxfile()
-for key, value in i18n_json["en"].items():
-    tmx.addtranslation(value, "en", origintuple=(key,))
-
+# Write TMX file
 with open(os.path.join("processed", "export.tmx"), "wb") as tmx_file:
     tmx.serialize(tmx_file)
 
 # Create JSON l10n file
 jsonl10n = JsonFile()
+jsonl10n.settargetlanguage('en')
 for key, value in i18n_json["en"].items():
     jsonl10n.addunit(jsonl10n.UnitClass(source=key, target=value))
 
